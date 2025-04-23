@@ -19,8 +19,11 @@ let config = {
     render: {
         pixelArt: true  // prevent pixel art from getting blurred when scaled
     },
-    width: 800,
-    height: 600,
+    width: 320,
+    height: 288,
+    scaleMode: Phaser.Scale.FIT,
+    maxHeight: 100, //TODO: this doesn't work for some reason? 
+    // I want the viewport to only scale to a certain fraction of the screen ^
     scene: [MainGame]
 }
 
