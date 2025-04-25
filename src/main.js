@@ -21,9 +21,9 @@ let config = {
     },
     width: 320,
     height: 288,
-    scaleMode: Phaser.Scale.FIT,
-    maxHeight: 100, //TODO: this doesn't work for some reason? 
-    // I want the viewport to only scale to a certain fraction of the screen ^
+    // scaleMode: Phaser.Scale.FIT,
+    // maxHeight: 100,
+    zoom: 3, //TODO: remove this and make it so scaleMode and maxHeight work
     scene: [MainGame]
 }
 
