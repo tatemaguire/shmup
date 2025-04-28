@@ -24,7 +24,7 @@ let config = {
     // scaleMode: Phaser.Scale.FIT,
     // maxHeight: 100,
     zoom: 3, //TODO: remove this and make it so scaleMode and maxHeight work
-    scene: [MainGame]
+    scene: [Level]
 }
 
 const game = new Phaser.Game(config);
