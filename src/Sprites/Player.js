@@ -6,14 +6,21 @@ class Player extends Phaser.GameObjects.Sprite {
         this.leftKey = leftKey;
         this.rightKey = rightKey;
         this.shootKey = shootKey;
+        
+        // movement design variables
         this.playerMovementSpeed = playerMovementSpeed;
-
-        this.facingRight = true;
-
+        
         // collision design variables
         this.movementCollisionRadius = 16; // radius of box that collides with edge of screen
         this.rx = this.displayWidth/2; // x radius of box for bullet collision
         this.ry = this.displayHeight/2; // y radius of box for bullet collision
+        
+        // shooting design variables
+        this.cooldownLength = 200; // ms
+        
+        // other
+        this.facingRight = true;
+        this.cooldownTimer = 0;
     }
     
     update(time, delta, timescale = 1) {
@@ -34,9 +41,10 @@ class Player extends Phaser.GameObjects.Sprite {
             this.facingRight = true;
         }
 
-        if (this.shootKey.isDown) {
+        this.cooldownTimer += delta * timescale;
+        if (this.shootKey.isDown && this.cooldownTimer > this.cooldownLength) {
             this.scene.spawnPlayerBullet();
+            this.cooldownTimer = 0;
         }
-
     }
 }

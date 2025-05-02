@@ -4,14 +4,13 @@ class Level extends Phaser.Scene {
 
         this.my = {sprite: {}};
         // bullet array
-        this.my.projectiles = [];
+        this.my.playerProjectiles = [];
+        this.my.enemyProjectiles = [];
         
         // design variables
         this.oceanScrollSpeed = 0.02; // pixels per ms
         this.playerMovementSpeed = 0.1; // pixels per ms
-        this.playerBulletMovementSpeed = 0.2; // pixels per ms
-        this.cooldownLength = 200; // ms
-        this.cooldownTimer = 0;
+        this.playerBulletMovementSpeed = 0.2;
         this.playerTime = 1; // 1 is full speed, 0 is paused
         
         this.enemyTime = 1;
@@ -64,8 +63,10 @@ class Level extends Phaser.Scene {
 
     // when player shoots them, and become invisible when off screen. only visible bullets move/collide
     spawnPlayerBullet() {
-        let bullet = this.add.sprite(this.my.sprite.player.x, this.my.sprite.player.y - this.my.sprite.player.displayHeight/2, "cannonball");
-        this.my.projectiles.push({sprite: bullet, dx: 0, dy: -this.playerBulletMovementSpeed, playerTime: true});
+        let bullet = new Projectile(this, this.my.sprite.player.x, this.my.sprite.player.y, "cannonball", null);
+        bullet.depth = 4;
+        bullet.setVelocity(this.playerBulletMovementSpeed, 90);
+        this.my.playerProjectiles.push(bullet);
     }
 
     damagePlayer() {
@@ -91,7 +92,7 @@ class Level extends Phaser.Scene {
         // if (this.debugCounter % 120 === 0) {
         //     this.damagePlayer();
         //     let fish = this.add.sprite(8, 8, "monochrome-pirates", 119);
-        //     this.my.projectiles.push({sprite: fish, dx: 0.141421, dy: 0.141421, playerTime: false});
+        //     this.my.playerProjectiles.push({sprite: fish, dx: 0.141421, dy: 0.141421, playerTime: false});
         // }
 
         // if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
@@ -107,39 +108,22 @@ class Level extends Phaser.Scene {
         // scroll the ocean background
         this.my.sprite.oceanBG.tilePositionY -= delta * this.enemyTime * this.oceanScrollSpeed;
         
+        // update player
         this.my.sprite.player.update(time, delta, this.playerTime);
         this.my.sprite.dinghy.update();
 
-        // projectile movement
-        let itemIndex = 0;
-        for (let item of this.my.projectiles) {
-            // move projectile
-            if (item.playerTime) {
-                item.sprite.x += delta * this.playerTime * item.dx;
-                item.sprite.y += delta * this.playerTime * item.dy;
-            }
-            else {
-                item.sprite.x += delta * this.enemyTime * item.dx;
-                item.sprite.y += delta * this.enemyTime * item.dy;
-            }
-            // if it's off screen, destroy it
-            if (item.sprite.x < -(item.sprite.displayWidth / 2) ||
-                    item.sprite.x > game.config.width + (item.sprite.displayWidth / 2) ||
-                    item.sprite.y < -(item.sprite.displayHeight / 2) ||
-                    item.sprite.y > game.config.height + (item.sprite.displayHeight / 2)) {
-                item.sprite.destroy();
-                this.my.projectiles.splice(itemIndex, 1);
-                itemIndex--;
-            }
-            itemIndex++;
-        }
-
-        // shoot input
-        this.cooldownTimer += delta * this.playerTime;
-        if (this.spaceKey.isDown) {
-            if (this.cooldownTimer > this.cooldownLength) {
-                this.spawnPlayerBullet();
-                this.cooldownTimer = 0;
+        // update player projectiles
+        for (let i = 0; i < this.my.playerProjectiles.length; i++) {
+            let p = this.my.playerProjectiles[i];
+            p.update(time, delta, this.playerTime);
+            // if off screen, destroy
+            if (p.x < -(p.displayWidth/2) ||
+                    p.x > game.config.width + (p.displayWidth/2) ||
+                    p.y < -(p.displayHeight/2) ||
+                    p.y > game.config.height + (p.displayHeight/2)) {
+                p.destroy();
+                this.my.playerProjectiles.splice(i, 1);
+                i--; // for loop removal
             }
         }
     }
