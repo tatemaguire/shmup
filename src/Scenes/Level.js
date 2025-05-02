@@ -37,8 +37,8 @@ class Level extends Phaser.Scene {
         this.leftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
         this.rightKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        // this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
-        // this.oKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
+        this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+        this.oKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
 
         // create ocean
         this.my.sprite.oceanBG = this.add.tileSprite(160, 144, 320, 288, "ocean-background");
@@ -48,22 +48,17 @@ class Level extends Phaser.Scene {
         this.my.UItiles = this.my.UImap.addTilesetImage("monochrome-pirates", "monochrome-pirates");
         this.my.UIlayer = this.my.UImap.createLayer("Base", this.my.UItiles, 0, 256);
 
-        // create player sprites
+        // create player sprite
         this.my.sprite.player = new Player(this, 160, 232, "monochrome-pirates", 125, this.leftKey, this.rightKey, this.spaceKey, this.playerMovementSpeed);
-        this.my.sprite.player.depth = 4;
-        this.my.sprite.dinghyLeft = this.add.sprite(this.my.sprite.player.x, this.my.sprite.player.y, "monochrome-pirates", 100);
-        this.my.sprite.dinghyRight = this.add.sprite(this.my.sprite.player.x, this.my.sprite.player.y, "monochrome-pirates", 101);
-        this.my.sprite.dinghyLeft.setOrigin(1, 0);
-        this.my.sprite.dinghyRight.setOrigin(0, 0);
+        this.my.sprite.player.depth = 5;
+        this.my.sprite.dinghy = new Dinghy(this, this.my.sprite.player.x, this.my.sprite.player.y + this.my.sprite.player.displayHeight/2);
+        this.my.sprite.dinghy.depth = 1;
+        this.my.sprite.dinghy.followPlayer(this.my.sprite.player);
 
         // create extra dinghies
-        this.my.extraLives = []; // this array holds 5 items, which are arrays of length 2, for each half
+        this.my.extraDinghies = [];
         for (let x = 32; x <= 128; x += 32) {
-            let left = this.add.sprite(x, 272, "monochrome-pirates", 100);
-            let right = this.add.sprite(x, 272, "monochrome-pirates", 101);
-            left.setOrigin(1, 0);
-            right.setOrigin(0, 0);
-            this.my.extraLives.push([left, right]);
+            this.my.extraDinghies.push(new Dinghy(this, x, game.config.height - 8));
         }
     }
 
@@ -74,26 +69,27 @@ class Level extends Phaser.Scene {
     }
 
     damagePlayer() {
-        if (this.my.extraLives.length === 0) {
+        if (this.my.extraDinghies.length === 0) {
             this.gameOver();
             return;
         }
         else {
             console.log("yeeeouch!!");
-            let extraDinghy = this.my.extraLives.pop();
-            extraDinghy[0].destroy();
-            extraDinghy[1].destroy();
+            this.my.extraDinghies.pop().destroy();
         }
     }
 
     gameOver() {
         console.log("GAME OVER!!!!!!!!!");
+        this.playerTime = 0;
+        this.enemyTime = 0;
     }
     
     update(time, delta) {
         // debug counter
         // this.debugCounter += this.enemyTime;
         // if (this.debugCounter % 120 === 0) {
+        //     this.damagePlayer();
         //     let fish = this.add.sprite(8, 8, "monochrome-pirates", 119);
         //     this.my.projectiles.push({sprite: fish, dx: 0.141421, dy: 0.141421, playerTime: false});
         // }
@@ -112,7 +108,7 @@ class Level extends Phaser.Scene {
         this.my.sprite.oceanBG.tilePositionY -= delta * this.enemyTime * this.oceanScrollSpeed;
         
         this.my.sprite.player.update(time, delta, this.playerTime);
-        // TODO: update dinghy position to the player
+        this.my.sprite.dinghy.update();
 
         // projectile movement
         let itemIndex = 0;
