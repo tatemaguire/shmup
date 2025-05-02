@@ -36,7 +36,6 @@ class Level extends Phaser.Scene {
     }
     
     create() {
-
         // create ocean
         this.my.sprite.oceanBG = this.add.tileSprite(160, 144, 320, 288, "ocean-background");
         
@@ -50,7 +49,7 @@ class Level extends Phaser.Scene {
         this.my.sprite.dinghyRight = this.add.sprite(this.playerX, this.playerY, "monochrome-pirates", 101);
         this.my.sprite.dinghyLeft.setOrigin(1, 0);
         this.my.sprite.dinghyRight.setOrigin(0, 0);
-        this.my.sprite.player = this.add.sprite(this.playerX, this.playerY, "monochrome-pirates", 125);
+        // this.my.sprite.player = this.add.sprite(this.playerX, this.playerY, "monochrome-pirates", 125);
 
         // create extra dinghies
         this.my.extraLives = []; // this array holds 5 items, which are arrays of length 2, for each half
@@ -68,12 +67,13 @@ class Level extends Phaser.Scene {
         
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-        this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
-        this.oKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
+        // this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+        // this.oKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
 
+        this.my.player = new Player(this, this.playerX, this.playerY, "monochrome-pirates", 125,
+                                this.leftKey, this.rightKey, this.playerMovementSpeed);
     }
 
-    // TODO: another way to do this would be a fixed array length 10, where bullets become visible
     // when player shoots them, and become invisible when off screen. only visible bullets move/collide
     spawnPlayerBullet() {
         let bullet = this.add.sprite(this.playerX, this.playerY - this.my.sprite.player.displayHeight/2, "cannonball");
@@ -95,57 +95,60 @@ class Level extends Phaser.Scene {
 
     gameOver() {
         console.log("GAME OVER!!!!!!!!!");
+        this.playerTime = 0;
+        this.enemyTime = 0;
     }
     
     update(time, delta) {
         // debug counter
-        this.debugCounter += this.enemyTime;
-        if (this.debugCounter % 120 === 0) {
-            let fish = this.add.sprite(8, 8, "monochrome-pirates", 119);
-            this.my.projectiles.push({sprite: fish, dx: 0.141421, dy: 0.141421, playerTime: false});
-        }
+        // this.debugCounter += this.enemyTime;
+        // if (this.debugCounter % 120 === 0) {
+        //     this.damagePlayer();
+        // }
 
-        if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
-            if (this.playerTime === 1) this.playerTime = 0;
-            else if (this.playerTime === 0) this.playerTime = 1;
-        }
+        // if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
+        //     if (this.playerTime === 1) this.playerTime = 0;
+        //     else if (this.playerTime === 0) this.playerTime = 1;
+        // }
 
-        if (Phaser.Input.Keyboard.JustDown(this.oKey)) {
-            if (this.enemyTime === 1) this.enemyTime = 0;
-            else if (this.enemyTime === 0) this.enemyTime = 1;
-        }
+        // if (Phaser.Input.Keyboard.JustDown(this.oKey)) {
+        //     if (this.enemyTime === 1) this.enemyTime = 0;
+        //     else if (this.enemyTime === 0) this.enemyTime = 1;
+        // }
 
         // scroll the ocean background
         this.my.sprite.oceanBG.tilePositionY -= delta * this.enemyTime * this.oceanScrollSpeed;
         
         // movement input
-        if (this.leftKey.isDown && !this.rightKey.isDown) {
-            this.playerX -= delta * this.playerTime * this.playerMovementSpeed;
-            // flip dinghy, change origins so the two tiles switch places
-            this.my.sprite.dinghyLeft.flipX = true;
-            this.my.sprite.dinghyRight.flipX = true;
-            this.my.sprite.dinghyLeft.setOrigin(0, 0);
-            this.my.sprite.dinghyRight.setOrigin(1, 0);
-        }
-        if (this.rightKey.isDown && !this.leftKey.isDown) {
-            this.playerX += delta * this.playerTime * this.playerMovementSpeed;
-            // return dinghy sprites to normal
-            this.my.sprite.dinghyLeft.flipX = false;
-            this.my.sprite.dinghyRight.flipX = false;
-            this.my.sprite.dinghyLeft.setOrigin(1, 0);
-            this.my.sprite.dinghyRight.setOrigin(0, 0);
-        }
+        // if (this.leftKey.isDown && !this.rightKey.isDown) {
+        //     this.playerX -= delta * this.playerTime * this.playerMovementSpeed;
+        //     // flip dinghy, change origins so the two tiles switch places
+        //     this.my.sprite.dinghyLeft.flipX = true;
+        //     this.my.sprite.dinghyRight.flipX = true;
+        //     this.my.sprite.dinghyLeft.setOrigin(0, 0);
+        //     this.my.sprite.dinghyRight.setOrigin(1, 0);
+        // }
+        // if (this.rightKey.isDown && !this.leftKey.isDown) {
+        //     this.playerX += delta * this.playerTime * this.playerMovementSpeed;
+        //     // return dinghy sprites to normal
+        //     this.my.sprite.dinghyLeft.flipX = false;
+        //     this.my.sprite.dinghyRight.flipX = false;
+        //     this.my.sprite.dinghyLeft.setOrigin(1, 0);
+        //     this.my.sprite.dinghyRight.setOrigin(0, 0);
+        // }
 
         // stop player from going off screen
-        let maxX = game.config.width - this.my.sprite.dinghyRight.displayWidth;
-        let minX = this.my.sprite.dinghyRight.displayWidth;
-        if (this.playerX > maxX) this.playerX = maxX;
-        if (this.playerX < minX) this.playerX = minX;
+        // let maxX = game.config.width - this.my.sprite.dinghyRight.displayWidth;
+        // let minX = this.my.sprite.dinghyRight.displayWidth;
+        // if (this.playerX > maxX) this.playerX = maxX;
+        // if (this.playerX < minX) this.playerX = minX;
+
+        this.my.player.update(time, delta, this.playerTime);
 
         // update sprite position
-        this.my.sprite.dinghyLeft.x = this.playerX;
-        this.my.sprite.dinghyRight.x = this.playerX;
-        this.my.sprite.player.x = this.playerX;
+        this.my.sprite.dinghyLeft.x = this.my.player.x;
+        this.my.sprite.dinghyRight.x = this.my.player.y;
+        // this.my.sprite.player.x = this.playerX;
 
         // projectile movement
         let itemIndex = 0;
