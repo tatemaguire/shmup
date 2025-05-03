@@ -20,7 +20,6 @@ class Enemy extends Phaser.GameObjects.Sprite {
      */
     takeDamage(damageAmount) {
         this.alpha = 0;
-        console.log("hit!", damageAmount);
         this.health -= damageAmount;
         if (this.health <= 0) {
             this.destroy();

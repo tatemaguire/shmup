@@ -10,7 +10,7 @@ class Level extends Phaser.Scene {
         this.my.enemyProjectiles = [];
         
         // design variables
-        this.oceanScrollSpeed = 0.02; // pixels per ms
+        this.oceanScrollSpeed = 0.01; // pixels per ms
         this.playerMovementSpeed = 0.1; // pixels per ms
         this.playerBulletMovementSpeed = 0.2;
 
@@ -52,7 +52,7 @@ class Level extends Phaser.Scene {
 
         // create player sprite
         this.my.sprite.player = new Player(this, 160, 232, this.playerMovementSpeed, this.leftKey, this.rightKey, this.spaceKey);
-        this.my.sprite.player.depth = 5;
+        this.my.sprite.player.depth = 4;
         this.my.sprite.dinghy = new Dinghy(this, this.my.sprite.player.x, this.my.sprite.player.y + this.my.sprite.player.displayHeight/2);
         this.my.sprite.dinghy.depth = 1;
         this.my.sprite.dinghy.followPlayer(this.my.sprite.player);
@@ -69,23 +69,32 @@ class Level extends Phaser.Scene {
         // let debugEnemy = new Enemy(this, game.config.width/2, 20, "monochrome-pirates", 124, 8, 8, 10);
         // debugEnemy.depth = 3;
         // this.my.enemies.push(debugEnemy);
-        for (let x = 64; x <= game.config.width - 64; x += 16) {
+        for (let x = 64; x <= game.config.width - 64; x += 32) {
             this.spawnMermaid(x, 32);
         }
     }
 
     spawnMermaid(x, y) {
         let mermaid = new Mermaid(this, x, y);
-        mermaid.depth = 3;
+        mermaid.depth = 2;
         this.my.enemies.push(mermaid);
     }
 
     spawnPlayerBullet() {
         let bullet = new Projectile(this, this.my.sprite.player.x, this.my.sprite.player.y, "cannonball", null, 4);
-        bullet.depth = 4;
+        bullet.depth = 5;
         bullet.flipY = true;
-        bullet.setVelocity(this.playerBulletMovementSpeed, -90);
+        bullet.setVelocity(this.playerBulletMovementSpeed, -Math.PI/2);
         this.my.playerProjectiles.push(bullet);
+    }
+
+    addEnemyProjectile(projectile) {
+        projectile.depth = 3;
+        this.my.enemyProjectiles.push(projectile);
+    }
+
+    getPlayerPosition() {
+        return {x: this.my.sprite.player.x, y: this.my.sprite.player.y};
     }
 
     damagePlayer() {
@@ -107,13 +116,13 @@ class Level extends Phaser.Scene {
     
     update(time, delta) {
         // debug counter
-        this.debugCounter += this.enemyTime;
-        if (this.debugCounter % 120 === 0) {
-            let fish = new Projectile(this, 0, 0, "monochrome-pirates", 119, 6);
-            fish.depth = 2;
-            fish.setVelocity(0.1, 45);
-            this.my.enemyProjectiles.push(fish);
-        }
+        // this.debugCounter += this.enemyTime;
+        // if (this.debugCounter % 120 === 0) {
+        //     let fish = new Projectile(this, 0, 0, "monochrome-pirates", 119, 6);
+        //     fish.depth = 2;
+        //     fish.setVelocity(0.1, Math.PI/4);
+        //     this.my.enemyProjectiles.push(fish);
+        // }
 
         // if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
         //     if (this.playerTime === 1) this.playerTime = 0;
@@ -134,7 +143,7 @@ class Level extends Phaser.Scene {
 
         // update enemies
         for (let enemy of this.my.enemies) {
-            enemy.update(time, delta, this.enemyTime);
+            enemy.update(time, delta, this.enemyTime, this.oceanScrollSpeed);
         }
 
         // update player projectiles
