@@ -1,6 +1,9 @@
 class Player extends Phaser.GameObjects.Sprite {
-    constructor(scene, x, y, texture, frame, leftKey, rightKey, shootKey, playerMovementSpeed) {
-        super(scene, x, y, texture, frame);
+    static texture = "monochrome-pirates";
+    static frame = 125;
+
+    constructor(scene, x, y, playerMovementSpeed, leftKey, rightKey, shootKey) {
+        super(scene, x, y, Player.texture, Player.frame);
         scene.add.existing(this);
 
         this.leftKey = leftKey;
@@ -12,8 +15,8 @@ class Player extends Phaser.GameObjects.Sprite {
         
         // collision design variables
         this.movementCollisionRadius = 16; // radius of box that collides with edge of screen
-        this.rx = this.displayWidth/2; // x radius of box for bullet collision
-        this.ry = this.displayHeight/2; // y radius of box for bullet collision
+        this.rx = 0.5 * (this.displayWidth/2); // x radius of box for bullet collision
+        this.ry = 0.5 * (this.displayHeight/2); // y radius of box for bullet collision
         
         // shooting design variables
         this.cooldownLength = 200; // ms

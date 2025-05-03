@@ -19,6 +19,14 @@ class Dinghy {
         this.spriteR.x = x + this.spriteR.displayWidth/2;
     }
 
+    /**
+     * @param {Number} num
+     */
+    set depth(num) {
+        this.spriteL.depth = num;
+        this.spriteR.depth = num;
+    }
+
     followPlayer(player) {
         this.player = player;
         this.followingPlayer = true;

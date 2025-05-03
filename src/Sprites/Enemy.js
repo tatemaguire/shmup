@@ -1,0 +1,39 @@
+class Enemy extends Phaser.GameObjects.Sprite {
+    constructor(scene, x, y, texture, frame, rx, ry, maxHealth) {
+        super(scene, x, y, texture, frame);
+        scene.add.existing(this);
+
+        this.rx = rx;
+        this.ry = ry;
+        this.maxHealth = maxHealth;
+        this.health = maxHealth;
+
+        this.isDead = false;
+
+        // design variables
+        this.damagedAnimationSpeed = 0.01; // amt of alpha added back per ms
+    }
+
+    /**
+     * Inflict damage on the enemy, if health reaches 0, then destroys itself and becomes dead
+     * @param {Number} damageAmount 
+     */
+    takeDamage(damageAmount) {
+        this.alpha = 0;
+        console.log("hit!", damageAmount);
+        this.health -= damageAmount;
+        if (this.health <= 0) {
+            this.destroy();
+            this.isDead = true;
+        }
+    }
+
+    update(time, delta, timescale) {
+        if (this.alpha < 1) {
+            this.alpha += delta * timescale * this.damagedAnimationSpeed;
+            if (this.alpha > 1) {
+                this.alpha = 1;
+            }
+        }
+    }
+}
