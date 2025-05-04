@@ -4,6 +4,7 @@ class Level extends Phaser.Scene {
 
         this.my = {};
         this.my.sprite = {};
+        this.my.ui = {};
 
         this.my.enemies = [];
         this.my.playerProjectiles = [];
@@ -28,6 +29,8 @@ class Level extends Phaser.Scene {
         
         this.load.image("ocean-background", "sprites/oceanBG.png");
         this.load.tilemapTiledJSON("ui-map", "tilemaps/life_score_ui.tmj");
+
+        this.load.bitmapFont('mini-square-mono', 'fonts/Kenney-Mini-Square-Mono.png', 'fonts/Kenney-Mini-Square-Mono.xml');
         
         // update instruction text
         document.getElementById('description').innerHTML = '<h2>Tates Shmup</h2>';
@@ -45,10 +48,15 @@ class Level extends Phaser.Scene {
         this.my.sprite.oceanBG = this.add.tileSprite(160, 144, 320, 288, "ocean-background");
         
         // create UI at the bottom of the screen
-        this.my.UImap = this.make.tilemap({key: "ui-map"});
-        this.my.UItiles = this.my.UImap.addTilesetImage("monochrome-pirates", "monochrome-pirates");
-        this.my.UIlayer = this.my.UImap.createLayer("Base", this.my.UItiles, 0, 256);
-        this.my.UIlayer.depth = 6;
+        this.my.ui.map = this.make.tilemap({key: "ui-map"});
+        this.my.ui.tiles = this.my.ui.map.addTilesetImage("monochrome-pirates", "monochrome-pirates");
+        this.my.ui.layer = this.my.ui.map.createLayer("Base", this.my.ui.tiles, 0, 256);
+        this.my.ui.layer.depth = 6;
+        // this.my.ui.layer.visible = false;
+        this.my.ui.scoreText = this.add.bitmapText(240, 272-8, 'mini-square-mono', '7654');
+        this.my.ui.scoreText.depth = 7;
+        this.my.ui.scoreText.fontSize = 24;
+        this.my.ui.scoreText.letterSpacing = 0;
 
         // create player sprite
         this.my.sprite.player = new Player(this, 160, 232, this.playerMovementSpeed, this.leftKey, this.rightKey, this.spaceKey);
@@ -118,7 +126,7 @@ class Level extends Phaser.Scene {
     
     update(time, delta) {
         // debug counter
-        // this.debugCounter += this.enemyTime;
+        this.debugCounter += this.enemyTime;
         // if (this.debugCounter % 120 === 0) {
         //     let fish = new Projectile(this, 0, 0, "monochrome-pirates", 119, 6);
         //     fish.depth = 2;
@@ -226,5 +234,8 @@ class Level extends Phaser.Scene {
             }
         }
         if (playerHit) this.damagePlayer(); // player can only be damaged once per frame
+
+        // update score
+        this.my.ui.scoreText.setText(('0000' + this.debugCounter).slice(-4));
     }
 }
