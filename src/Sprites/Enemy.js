@@ -9,6 +9,7 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.health = maxHealth;
 
         this.isDead = false;
+        this.canShoot = true;
 
         // design variables
         this.damagedAnimationSpeed = 0.01; // amt of alpha added back per ms
@@ -22,9 +23,13 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.alpha = 0;
         this.health -= damageAmount;
         if (this.health <= 0) {
-            this.destroy();
-            this.isDead = true;
+            this.kill();
         }
+    }
+
+    kill() {
+        this.destroy();
+        this.isDead = true;
     }
 
     update(time, delta, timescale) {

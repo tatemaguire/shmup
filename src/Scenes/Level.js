@@ -98,6 +98,8 @@ class Level extends Phaser.Scene {
     }
 
     damagePlayer() {
+        if (this.my.sprite.player.isInvincible) return;
+
         if (this.my.extraDinghies.length === 0) {
             this.gameOver();
             return;
@@ -160,6 +162,7 @@ class Level extends Phaser.Scene {
                 i--; // for loop removal
             }
         }
+
         // update enemy projectiles
         for (let i = 0; i < this.my.enemyProjectiles.length; i++) {
             let p = this.my.enemyProjectiles[i];
@@ -174,20 +177,6 @@ class Level extends Phaser.Scene {
                 i--; // for loop removal
             }
         }
-
-        // check enemyProjectile collision with player
-        let playerHit = false;
-        for (let i = 0; i < this.my.enemyProjectiles.length; i++) {
-            let p = this.my.enemyProjectiles[i];
-            let player = this.my.sprite.player;
-            if (Math.abs(player.x - p.x) < player.rx + p.rx && Math.abs(player.y - p.y) < player.ry + p.ry) {
-                playerHit = true;
-                p.destroy();
-                this.my.enemyProjectiles.splice(i, 1);
-                i--; // for loop removal
-            }
-        }
-        if (playerHit) this.damagePlayer(); // player can only be damaged once per frame
 
         // check playerProjectile collision with enemy
         for (let i = 0; i < this.my.enemies.length; i++) {
@@ -205,10 +194,37 @@ class Level extends Phaser.Scene {
             if (!enemyDamage) continue; // skip the following code if the enemy doesn't take damage
             enemy.takeDamage(enemyDamage);
             if (enemy.isDead) {
-                enemy.destroy();
                 this.my.enemies.splice(i, 1);
                 i--; // for loop removal
             }
         }
+
+        // check enemyProjectile collision with player
+        let playerHit = false;
+        for (let i = 0; i < this.my.enemyProjectiles.length; i++) {
+            let p = this.my.enemyProjectiles[i];
+            let player = this.my.sprite.player;
+            if (Math.abs(player.x - p.x) < player.rx + p.rx && Math.abs(player.y - p.y) < player.ry + p.ry) {
+                playerHit = true;
+                p.destroy();
+                this.my.enemyProjectiles.splice(i, 1);
+                i--; // for loop removal
+            }
+        }
+
+        // check enemy collision with player's horizontal
+        // also deactive enemy attacks within two tiles of player y
+        for (let i = 0; i < this.my.enemies.length; i++) {
+            let enemy = this.my.enemies[i];
+            let player = this.my.sprite.player;
+            if (enemy.canShoot && Math.abs(player.y - enemy.y) < 64) enemy.canShoot = false; 
+            if (Math.abs(player.y - enemy.y) < player.ry + enemy.ry) {
+                playerHit = true;
+                enemy.kill();
+                this.my.enemies.splice(i, 1);
+                i--;
+            }
+        }
+        if (playerHit) this.damagePlayer(); // player can only be damaged once per frame
     }
 }

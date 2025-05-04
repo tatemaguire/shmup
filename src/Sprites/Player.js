@@ -24,6 +24,9 @@ class Player extends Phaser.GameObjects.Sprite {
         // other
         this.facingRight = true;
         this.cooldownTimer = 0;
+
+        this.isInvincible = false;
+        this.canShoot = true;
     }
     
     update(time, delta, timescale = 1) {
@@ -45,7 +48,7 @@ class Player extends Phaser.GameObjects.Sprite {
         }
 
         this.cooldownTimer += delta * timescale;
-        if (this.shootKey.isDown && this.cooldownTimer > this.cooldownLength) {
+        if (this.canShoot && this.shootKey.isDown && this.cooldownTimer > this.cooldownLength) {
             this.scene.spawnPlayerBullet();
             this.cooldownTimer = 0;
         }
