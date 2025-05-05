@@ -8,7 +8,7 @@ class Mermaid extends Enemy {
         // design variables
         let rx = 8;
         let ry = 8;
-        let maxHealth = 10;
+        let maxHealth = 5;
         
         super(scene, x, y, Mermaid.texture, Mermaid.frame, rx, ry, maxHealth);
         
@@ -30,6 +30,7 @@ class Mermaid extends Enemy {
         this.horizontalMovementSpeed = 0.002; // no particular unit
         
         // pathing for x movement
+        this.x -= this.horizontalMovementRange/2; // to center the mermaid's path
         this.path = new Phaser.Curves.Spline([0, 0, this.horizontalMovementRange, 0]);
         this.t = 0;
         this.oldPathX = 0;
@@ -39,11 +40,15 @@ class Mermaid extends Enemy {
         return Math.floor(Math.random() * (this.maxCooldown-this.minCooldown) + this.minCooldown);
     }
 
-    update(time, delta, timescale, oceanScrollSpeed) {
-        super.update(time, delta, timescale);
-        // mermaid movement
-        this.y += delta * timescale * (oceanScrollSpeed/2);
+    kill() {
+        stats.mermaidsKilled++;
+        super.kill();
+    }
 
+    update(time, delta, timescale, oceanScrollSpeed) {
+        super.update(time, delta, timescale, oceanScrollSpeed);
+
+        // mermaid horizontal movement
         this.t += delta * timescale * this.horizontalMovementSpeed;
         let sineT = (Math.sin(this.t) + 1) / 2;
         let newPathX = this.path.getPoint(sineT).x;

@@ -1,3 +1,8 @@
+let stats = {};
+stats.mermaidsKilled = 0;
+stats.pirateCratesKilled = 0;
+stats.score = 0;
+
 class Level extends Phaser.Scene {
     constructor() {
         super("level");
@@ -77,8 +82,9 @@ class Level extends Phaser.Scene {
         // let debugEnemy = new Enemy(this, game.config.width/2, 20, "monochrome-pirates", 124, 8, 8, 10);
         // debugEnemy.depth = 3;
         // this.my.enemies.push(debugEnemy);
-        for (let x = 64; x <= game.config.width - 64; x += 32) {
-            this.spawnMermaid(x, 32);
+        for (let x = 64; x <= game.config.width - 64; x += 80) {
+            this.spawnPirateCrate(x, 32);
+            this.spawnMermaid(x, 64);
         }
     }
 
@@ -86,6 +92,13 @@ class Level extends Phaser.Scene {
         let mermaid = new Mermaid(this, x, y);
         mermaid.depth = 2;
         this.my.enemies.push(mermaid);
+    }
+
+    spawnPirateCrate(x, y) {
+        let pirateCrate = new PirateCrate(this, x, y);
+        pirateCrate.depth = 2;
+        pirateCrate.crate.depth = 1;
+        this.my.enemies.push(pirateCrate);
     }
 
     spawnPlayerBullet() {
@@ -225,7 +238,7 @@ class Level extends Phaser.Scene {
         for (let i = 0; i < this.my.enemies.length; i++) {
             let enemy = this.my.enemies[i];
             let player = this.my.sprite.player;
-            if (enemy.canShoot && Math.abs(player.y - enemy.y) < 64) enemy.canShoot = false; 
+            if (enemy.canShoot && Math.abs(player.y - enemy.y) < 48) enemy.canShoot = false; 
             if (Math.abs(player.y - enemy.y) < player.ry + enemy.ry) {
                 playerHit = true;
                 enemy.kill();
@@ -236,6 +249,7 @@ class Level extends Phaser.Scene {
         if (playerHit) this.damagePlayer(); // player can only be damaged once per frame
 
         // update score
-        this.my.ui.scoreText.setText(('0000' + this.debugCounter).slice(-4));
+        stats.score = stats.mermaidsKilled*5 + stats.pirateCratesKilled*15;
+        this.my.ui.scoreText.setText(('0000' + stats.score).slice(-4));
     }
 }

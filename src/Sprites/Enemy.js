@@ -32,7 +32,11 @@ class Enemy extends Phaser.GameObjects.Sprite {
         this.isDead = true;
     }
 
-    update(time, delta, timescale) {
+    update(time, delta, timescale, oceanScrollSpeed) {
+        // every enemy scrolls at half ocean speed
+        this.y += delta * timescale * (oceanScrollSpeed/2);
+
+        // damage recovery animation
         if (this.alpha < 1) {
             this.alpha += delta * timescale * this.damagedAnimationSpeed;
             if (this.alpha > 1) {
