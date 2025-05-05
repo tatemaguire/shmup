@@ -16,7 +16,7 @@ class Level extends Phaser.Scene {
         this.my.enemyProjectiles = [];
         
         // design variables
-        this.oceanScrollSpeed = 0.01; // pixels per ms
+        this.oceanScrollSpeed = 0.015; // pixels per ms
         this.playerMovementSpeed = 0.1; // pixels per ms
         this.playerBulletMovementSpeed = 0.2;
 
@@ -27,6 +27,8 @@ class Level extends Phaser.Scene {
     }
     
     preload() {
+        this.load.json('wave-data', './src/WaveData.json');
+
         this.load.setPath("./assets/");
         
         this.load.spritesheet("monochrome-pirates", "sprites/tilemap_packed.png", {frameWidth: 16, frameHeight: 16});
@@ -46,8 +48,8 @@ class Level extends Phaser.Scene {
         this.leftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
         this.rightKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        // this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
-        // this.oKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
+        this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+        this.oKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
 
         // create ocean
         this.my.sprite.oceanBG = this.add.tileSprite(160, 144, 320, 288, "ocean-background");
@@ -57,7 +59,6 @@ class Level extends Phaser.Scene {
         this.my.ui.tiles = this.my.ui.map.addTilesetImage("monochrome-pirates", "monochrome-pirates");
         this.my.ui.layer = this.my.ui.map.createLayer("Base", this.my.ui.tiles, 0, 256);
         this.my.ui.layer.depth = 6;
-        // this.my.ui.layer.visible = false;
         this.my.ui.scoreText = this.add.bitmapText(240, 272-8, 'mini-square-mono', '7654');
         this.my.ui.scoreText.depth = 7;
         this.my.ui.scoreText.fontSize = 24;
@@ -78,13 +79,23 @@ class Level extends Phaser.Scene {
             this.my.extraDinghies.push(dinghy);
         }
 
-        // debug enemy
-        // let debugEnemy = new Enemy(this, game.config.width/2, 20, "monochrome-pirates", 124, 8, 8, 10);
-        // debugEnemy.depth = 3;
-        // this.my.enemies.push(debugEnemy);
-        for (let x = 64; x <= game.config.width - 64; x += 80) {
-            this.spawnPirateCrate(x, 32);
-            this.spawnMermaid(x, 64);
+        // load first wave
+        this.waveData = this.cache.json.get('wave-data');
+        this.loadWave(0);
+        this.currentWaveIndex = 0;
+
+        // start next wave timer
+        this.startNextWaveTimer = 0;
+        this.startNextWaveTimerLength = 2000; // ms to wait before starting next wave
+    }
+
+    loadWave(waveIndex) {
+        let wave = this.waveData[waveIndex];
+        for (let pos of wave.mermaids) {
+            this.spawnMermaid(8 + pos[0] * 16, 8 + pos[1] * 16);
+        }
+        for (let pos of wave.pirateCrates) {
+            this.spawnPirateCrate(8 + pos[0] * 16, 8 + pos[1] * 16);
         }
     }
 
@@ -119,7 +130,12 @@ class Level extends Phaser.Scene {
     }
 
     damagePlayer() {
-        if (this.my.sprite.player.isInvincible) return;
+        if (this.my.sprite.player.isInvincible) {
+            return;
+        }
+        else {
+            this.my.sprite.player.startRecovery();
+        }
 
         if (this.my.extraDinghies.length === 0) {
             this.gameOver();
@@ -129,6 +145,12 @@ class Level extends Phaser.Scene {
             console.log("yeeeouch!!");
             this.my.extraDinghies.pop().destroy();
         }
+    }
+
+    gameWin() {
+        console.log("YOU WINNN!!!");
+        this.playerTime = 0;
+        this.enemyTime = 0;
     }
 
     gameOver() {
@@ -147,15 +169,15 @@ class Level extends Phaser.Scene {
         //     this.my.enemyProjectiles.push(fish);
         // }
 
-        // if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
-        //     if (this.playerTime === 1) this.playerTime = 0;
-        //     else if (this.playerTime === 0) this.playerTime = 1;
-        // }
+        if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
+            if (this.playerTime === 1) this.playerTime = 0;
+            else if (this.playerTime === 0) this.playerTime = 1;
+        }
 
-        // if (Phaser.Input.Keyboard.JustDown(this.oKey)) {
-        //     if (this.enemyTime === 1) this.enemyTime = 0;
-        //     else if (this.enemyTime === 0) this.enemyTime = 1;
-        // }
+        if (Phaser.Input.Keyboard.JustDown(this.oKey)) {
+            if (this.enemyTime === 1) this.enemyTime = 0;
+            else if (this.enemyTime === 0) this.enemyTime = 1;
+        }
 
         // scroll the ocean background
         this.my.sprite.oceanBG.tilePositionY -= delta * this.enemyTime * this.oceanScrollSpeed;
@@ -241,7 +263,7 @@ class Level extends Phaser.Scene {
             if (enemy.canShoot && Math.abs(player.y - enemy.y) < 48) enemy.canShoot = false; 
             if (Math.abs(player.y - enemy.y) < player.ry + enemy.ry) {
                 playerHit = true;
-                enemy.kill();
+                enemy.destroy();
                 this.my.enemies.splice(i, 1);
                 i--;
             }
@@ -251,5 +273,23 @@ class Level extends Phaser.Scene {
         // update score
         stats.score = stats.mermaidsKilled*5 + stats.pirateCratesKilled*15;
         this.my.ui.scoreText.setText(('0000' + stats.score).slice(-4));
+
+        // move to next wave if all enemies are dead
+        if (this.my.enemies.length === 0) {
+            if (this.currentWaveIndex === this.waveData.length - 1) {
+                this.gameWin();
+            }
+            else {
+                // increment timer, this will go until next wave is loaded
+                this.startNextWaveTimer += delta;
+            }
+        }
+
+        // load next wave when timer is up
+        if (this.startNextWaveTimer > this.startNextWaveTimerLength) {
+            this.currentWaveIndex++;
+            this.loadWave(this.currentWaveIndex);
+            this.startNextWaveTimer = 0;
+        }
     }
 }

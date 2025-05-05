@@ -14,14 +14,10 @@ class Mermaid extends Enemy {
         
         this.fishMovementSpeed = 0.1; // pixels per ms
         
-        // first random cooldown
-        this.maxCooldown = 3000; // ms
-        this.minCooldown = 1; // ms
-        this.cooldownLength = this.#getNewCooldownLength();
-        
-        // the rest of the random cooldowns
-        this.maxCooldown = 10000;
-        this.minCooldown = 2000;
+        // random cooldown range
+        this.maxCooldown = 6000; // ms
+        this.minCooldown = 3000; // ms
+        this.cooldownLength = this.#getNewCooldownLength() - 1500; // adjusted for first shots
         
         this.cooldownTimer = 0;
 

@@ -25,11 +25,37 @@ class Player extends Phaser.GameObjects.Sprite {
         this.facingRight = true;
         this.cooldownTimer = 0;
 
+        // recovery invincibility count down
+        // when this is set to a number, player has invincibility until it counts down to zero
+        this.invincibilityCountdown = 0;
+        this.invincibilityLength = 1000;
+
         this.isInvincible = false;
         this.canShoot = true;
     }
+
+    startRecovery() {
+        this.invincibilityCountdown = this.invincibilityLength;
+    }
     
     update(time, delta, timescale = 1) {
+        // invincibility during recovery
+        if (this.invincibilityCountdown > 0) {
+            this.invincibilityCountdown -= delta;
+
+            this.isInvincible = true;
+            this.canShoot = false;
+            this.rotation += 0.012 * delta;
+        }
+        else {
+            this.invincibilityCountdown = 0;
+            
+            this.isInvincible = false;
+            this.canShoot = true;
+            this.rotation = 0;
+        }
+
+        // if player time paused, don't do movement or shooting
         if (timescale === 0) return;
 
         if (this.leftKey.isDown && !this.rightKey.isDown) {

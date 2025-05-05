@@ -20,25 +20,33 @@ class Enemy extends Phaser.GameObjects.Sprite {
      * @param {Number} damageAmount 
      */
     takeDamage(damageAmount) {
-        this.alpha = 0;
+        this.alpha = 0.01;
         this.health -= damageAmount;
         if (this.health <= 0) {
             this.kill();
         }
     }
 
+    /**
+     * Call this when the player kills the enemy. This adds to the score, destroys the enemy, and labels it dead.
+     */
     kill() {
         this.destroy();
         this.isDead = true;
     }
 
+    destroy() {
+        this.isDead = true;
+        super.destroy();
+    }
+
     update(time, delta, timescale, oceanScrollSpeed) {
         // every enemy scrolls at half ocean speed
-        this.y += delta * timescale * (oceanScrollSpeed/2);
+        this.y += delta * timescale * (oceanScrollSpeed/3);
 
         // damage recovery animation
         if (this.alpha < 1) {
-            this.alpha += delta * timescale * this.damagedAnimationSpeed;
+            this.alpha += delta * this.damagedAnimationSpeed;
             if (this.alpha > 1) {
                 this.alpha = 1;
             }
