@@ -1,12 +1,27 @@
 let stats = {};
-stats.mermaidsKilled = 0;
-stats.pirateCratesKilled = 0;
-stats.score = 0;
+let GAME_ACTIVE = 0;
+let GAME_OVER = 1;
+let GAME_WIN = 2;
 
 class Level extends Phaser.Scene {
     constructor() {
         super("level");
+        this.statsInit();
+        this.gameInit();
+    }
 
+    statsInit() {
+        stats = {
+            mermaidsKilled: 0,
+            pointsPerMermaid: 50,
+            pirateCratesKilled: 0,
+            pointsPerPirateCrate: 150,
+            bonusPoints: 0,
+            score: 0
+        };
+    }
+
+    gameInit() {
         this.my = {};
         this.my.sprite = {};
         this.my.ui = {};
@@ -16,14 +31,20 @@ class Level extends Phaser.Scene {
         this.my.enemyProjectiles = [];
         
         // design variables
-        this.oceanScrollSpeed = 0.015; // pixels per ms
+        this.defaultOceanScrollSpeed = 0.015
+        this.oceanScrollSpeed = this.defaultOceanScrollSpeed; // pixels per ms
         this.playerMovementSpeed = 0.1; // pixels per ms
         this.playerBulletMovementSpeed = 0.2;
 
+        // start next wave timer
+        this.startNextWaveTimer = 0;
+        this.startNextWaveTimerLength = 2000; // ms to wait before starting next wave
+
         this.playerTime = 1; // 1 is full speed, 0 is paused
         this.enemyTime = 1;
-        
-        this.debugCounter = 0;
+        this.currentWaveIndex = 0;
+
+        this.gameState = GAME_ACTIVE;
     }
     
     preload() {
@@ -40,7 +61,7 @@ class Level extends Phaser.Scene {
         this.load.bitmapFont('mini-square-mono', 'fonts/Kenney-Mini-Square-Mono.png', 'fonts/Kenney-Mini-Square-Mono.xml');
         
         // update instruction text
-        document.getElementById('description').innerHTML = '<h2>Tates Shmup</h2>';
+        document.getElementById('description').innerHTML = '<h2>Tates Shmup</h2><body>Arrow keys to move, space to shoot, R to restart</body>';
     }
     
     create() {
@@ -50,6 +71,7 @@ class Level extends Phaser.Scene {
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
         this.oKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
+        this.rKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
 
         // create ocean
         this.my.sprite.oceanBG = this.add.tileSprite(160, 144, 320, 288, "ocean-background");
@@ -59,10 +81,27 @@ class Level extends Phaser.Scene {
         this.my.ui.tiles = this.my.ui.map.addTilesetImage("monochrome-pirates", "monochrome-pirates");
         this.my.ui.layer = this.my.ui.map.createLayer("Base", this.my.ui.tiles, 0, 256);
         this.my.ui.layer.depth = 6;
+
         this.my.ui.scoreText = this.add.bitmapText(240, 272-8, 'mini-square-mono', '7654');
         this.my.ui.scoreText.depth = 7;
         this.my.ui.scoreText.fontSize = 24;
         this.my.ui.scoreText.letterSpacing = 0;
+
+        this.my.ui.winLoseText = this.add.bitmapText(160+3, 72-9, 'mini-square-mono', 'GAME OVER');
+        this.my.ui.winLoseText.setOrigin(0.5, 0.5).setCenterAlign();
+        this.my.ui.winLoseText.depth = 7;
+        this.my.ui.winLoseText.fontSize = 48;
+        this.my.ui.winLoseText.letterSpacing = 0;
+        this.my.ui.winLoseText.maxWidth = 200;
+        this.my.ui.winLoseText.visible = false;
+        
+        this.my.ui.scoreResultText = this.add.bitmapText(160+1, 144-8, 'mini-square-mono', 'SCORE: 0000');
+        this.my.ui.scoreResultText.setOrigin(0.5, 0).setCenterAlign();
+        this.my.ui.scoreResultText.depth = 7;
+        this.my.ui.scoreResultText.fontSize = 24;
+        this.my.ui.scoreResultText.letterSpacing = 0;
+        this.my.ui.scoreResultText.maxWidth = 200;
+        this.my.ui.scoreResultText.visible = false;
 
         // create player sprite
         this.my.sprite.player = new Player(this, 160, 232, this.playerMovementSpeed, this.leftKey, this.rightKey, this.spaceKey);
@@ -81,16 +120,12 @@ class Level extends Phaser.Scene {
 
         // load first wave
         this.waveData = this.cache.json.get('wave-data');
-        this.loadWave(0);
-        this.currentWaveIndex = 0;
-
-        // start next wave timer
-        this.startNextWaveTimer = 0;
-        this.startNextWaveTimerLength = 2000; // ms to wait before starting next wave
+        this.loadWave(this.currentWaveIndex);
     }
 
     loadWave(waveIndex) {
         let wave = this.waveData[waveIndex];
+        this.oceanScrollSpeed = this.defaultOceanScrollSpeed * this.waveData[waveIndex].oceanSpeed;
         for (let pos of wave.mermaids) {
             this.spawnMermaid(8 + pos[0] * 16, 8 + pos[1] * 16);
         }
@@ -142,26 +177,59 @@ class Level extends Phaser.Scene {
             return;
         }
         else {
-            console.log("yeeeouch!!");
             this.my.extraDinghies.pop().destroy();
         }
     }
 
+    updateScore() {
+        stats.score = stats.mermaidsKilled*stats.pointsPerMermaid + stats.pirateCratesKilled*stats.pointsPerPirateCrate + stats.bonusPoints;
+        this.my.ui.scoreText.setText(('0000' + stats.score).slice(-4));
+    }
+
     gameWin() {
-        console.log("YOU WINNN!!!");
-        this.playerTime = 0;
-        this.enemyTime = 0;
+        if (this.gameState === GAME_WIN) return;
+
+        // destroy enemy projectiles
+        for (let p of this.my.enemyProjectiles) {
+            p.destroy();
+        }
+        this.my.enemyProjectiles = [];
+
+        this.my.ui.winLoseText.setText('YOU WIN');
+        this.my.ui.winLoseText.visible = true;
+
+        let extraLives = this.my.extraDinghies.length;
+        stats.bonusPoints += extraLives*100;
+        this.updateScore();
+        let txt = 'LIVES:' + ('    ' + extraLives).slice(-4) + 
+                 ' BONUS:' + ('    ' + extraLives*100).slice(-4) +
+                 ' SCORE:' + ('    ' + stats.score).slice(-4);
+        this.my.ui.scoreResultText.setText(txt);
+        this.my.ui.scoreResultText.visible = true;
+
+        this.oceanScrollSpeed = this.defaultOceanScrollSpeed;
+
+        this.gameState = GAME_WIN;
     }
 
     gameOver() {
-        console.log("GAME OVER!!!!!!!!!");
+        if (this.gameState === GAME_OVER) return;
+
+        this.my.ui.winLoseText.setText('GAME OVER');
+        this.my.ui.winLoseText.visible = true;
+
+        this.my.ui.scoreResultText.setText('PRESS R TO RESTART');
+        this.my.ui.scoreResultText.visible = true;
+
         this.playerTime = 0;
         this.enemyTime = 0;
+
+        this.gameState = GAME_OVER;
     }
     
     update(time, delta) {
         // debug counter
-        this.debugCounter += this.enemyTime;
+        // this.debugCounter += this.enemyTime;
         // if (this.debugCounter % 120 === 0) {
         //     let fish = new Projectile(this, 0, 0, "monochrome-pirates", 119, 6);
         //     fish.depth = 2;
@@ -170,13 +238,25 @@ class Level extends Phaser.Scene {
         // }
 
         if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
-            if (this.playerTime === 1) this.playerTime = 0;
-            else if (this.playerTime === 0) this.playerTime = 1;
+            // if (this.playerTime === 1) this.playerTime = 0;
+            // else if (this.playerTime === 0) this.playerTime = 1;
+            for (let enemy of this.my.enemies) {
+                enemy.kill();
+            }
+            this.my.enemies = [];
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.oKey)) {
             if (this.enemyTime === 1) this.enemyTime = 0;
             else if (this.enemyTime === 0) this.enemyTime = 1;
+        }
+
+        // resets the game
+        if (Phaser.Input.Keyboard.JustDown(this.rKey)) {
+            this.scene.start('level');
+            this.statsInit();
+            this.gameInit();
+            return;
         }
 
         // scroll the ocean background
@@ -270,9 +350,7 @@ class Level extends Phaser.Scene {
         }
         if (playerHit) this.damagePlayer(); // player can only be damaged once per frame
 
-        // update score
-        stats.score = stats.mermaidsKilled*5 + stats.pirateCratesKilled*15;
-        this.my.ui.scoreText.setText(('0000' + stats.score).slice(-4));
+        this.updateScore();
 
         // move to next wave if all enemies are dead
         if (this.my.enemies.length === 0) {
@@ -281,7 +359,7 @@ class Level extends Phaser.Scene {
             }
             else {
                 // increment timer, this will go until next wave is loaded
-                this.startNextWaveTimer += delta;
+                this.startNextWaveTimer += delta * this.enemyTime;
             }
         }
 

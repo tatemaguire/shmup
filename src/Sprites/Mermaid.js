@@ -28,7 +28,7 @@ class Mermaid extends Enemy {
         // pathing for x movement
         this.x -= this.horizontalMovementRange/2; // to center the mermaid's path
         this.path = new Phaser.Curves.Spline([0, 0, this.horizontalMovementRange, 0]);
-        this.t = 0;
+        this.t = 0; // mermaid starts in the center
         this.oldPathX = 0;
     }
 
@@ -46,7 +46,7 @@ class Mermaid extends Enemy {
 
         // mermaid horizontal movement
         this.t += delta * timescale * this.horizontalMovementSpeed;
-        let sineT = (Math.sin(this.t) + 1) / 2;
+        let sineT = (Math.sin(this.t - Math.PI/2) + 1) / 2;
         let newPathX = this.path.getPoint(sineT).x;
         this.x += newPathX - this.oldPathX; // add the delta x
         this.oldPathX = newPathX;
