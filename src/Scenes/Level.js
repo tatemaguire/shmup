@@ -59,6 +59,13 @@ class Level extends Phaser.Scene {
         this.load.tilemapTiledJSON("ui-map", "tilemaps/life_score_ui.tmj");
 
         this.load.bitmapFont('mini-square-mono', 'fonts/Kenney-Mini-Square-Mono.png', 'fonts/Kenney-Mini-Square-Mono.xml');
+
+        this.load.audio('water-ambience', 'audio/seaStormAmbience.wav');
+        this.load.audio('retro-click', 'audio/retro-click.wav');
+        this.load.audio('player-damage', 'audio/playerDamage.wav');
+        this.load.audio('enemy-damage', 'audio/enemyDamage.wav');
+        this.load.audio('player-shoot', 'audio/playerShoot.wav');
+        this.load.audio('enemy-shoot', 'audio/enemyShoot.wav');
         
         // update instruction text
         document.getElementById('description').innerHTML = '<h2>Tates Shmup</h2><body>Arrow keys to move, space to shoot, R to restart</body>';
@@ -121,6 +128,14 @@ class Level extends Phaser.Scene {
         // load first wave
         this.waveData = this.cache.json.get('wave-data');
         this.loadWave(this.currentWaveIndex);
+
+        // start ocean ambience
+        this.my.seaStormAmbience = this.sound.add('water-ambience', {loop: true, volume: 0.2, mute: true});
+        this.my.seaStormAmbience.play();
+
+        this.input.keyboard.on('keydown-I', () => {
+            this.my.seaStormAmbience.setMute(!this.my.seaStormAmbience.mute);
+        });
     }
 
     loadWave(waveIndex) {
@@ -148,6 +163,11 @@ class Level extends Phaser.Scene {
     }
 
     spawnPlayerBullet() {
+        let shootDetune = (Math.random() * 200) - 100; // -100 to 100
+        let shootVolume = (Math.random() * 0.5) + 0.2; // 0.2 to 0.7
+        this.sound.play('player-shoot', {detune: shootDetune, volume: shootVolume});
+        
+
         let bullet = new Projectile(this, this.my.sprite.player.x, this.my.sprite.player.y, "cannonball", null, 4);
         bullet.depth = 5;
         bullet.flipY = true;
@@ -156,6 +176,10 @@ class Level extends Phaser.Scene {
     }
 
     addEnemyProjectile(projectile) {
+        let shootDetune = (Math.random() * 200) - 100; // -100 to 100
+        let shootVolume = (Math.random() * 0.5) + 0.2; // 0.2 to 0.7
+        this.sound.play('enemy-shoot', {detune: shootDetune, volume: shootVolume});
+
         projectile.depth = 3;
         this.my.enemyProjectiles.push(projectile);
     }
@@ -165,12 +189,10 @@ class Level extends Phaser.Scene {
     }
 
     damagePlayer() {
-        if (this.my.sprite.player.isInvincible) {
-            return;
-        }
-        else {
-            this.my.sprite.player.startRecovery();
-        }
+        if (this.my.sprite.player.isInvincible) return;
+
+        this.sound.play('player-damage');
+        this.my.sprite.player.startRecovery();
 
         if (this.my.extraDinghies.length === 0) {
             this.gameOver();
@@ -194,6 +216,8 @@ class Level extends Phaser.Scene {
             p.destroy();
         }
         this.my.enemyProjectiles = [];
+
+        this.my.ui.scoreText.visible = false;
 
         this.my.ui.winLoseText.setText('YOU WIN');
         this.my.ui.winLoseText.visible = true;
@@ -309,6 +333,7 @@ class Level extends Phaser.Scene {
                 let p = this.my.playerProjectiles[j];
                 if (Math.abs(enemy.x - p.x) < enemy.rx + p.rx && Math.abs(enemy.y - p.y) < enemy.ry + p.ry) {
                     enemyDamage++;
+                    this.sound.play('enemy-damage');
                     p.destroy();
                     this.my.playerProjectiles.splice(j, 1);
                     j--; // for loop removal
@@ -317,6 +342,7 @@ class Level extends Phaser.Scene {
             if (!enemyDamage) continue; // skip the following code if the enemy doesn't take damage
             enemy.takeDamage(enemyDamage);
             if (enemy.isDead) {
+                this.sound.play('retro-click');
                 this.my.enemies.splice(i, 1);
                 i--; // for loop removal
             }
@@ -350,7 +376,7 @@ class Level extends Phaser.Scene {
         }
         if (playerHit) this.damagePlayer(); // player can only be damaged once per frame
 
-        this.updateScore();
+        if (this.gameState === GAME_ACTIVE) this.updateScore();
 
         // move to next wave if all enemies are dead
         if (this.my.enemies.length === 0) {
