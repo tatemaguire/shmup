@@ -1,7 +1,8 @@
 let stats = {};
-let GAME_ACTIVE = 0;
-let GAME_OVER = 1;
-let GAME_WIN = 2;
+let GAME_TITLE = 0;
+let GAME_ACTIVE = 1;
+let GAME_OVER = 2;
+let GAME_WIN = 3;
 
 class Level extends Phaser.Scene {
     constructor() {
@@ -44,7 +45,7 @@ class Level extends Phaser.Scene {
         this.enemyTime = 1;
         this.currentWaveIndex = 0;
 
-        this.gameState = GAME_ACTIVE;
+        this.gameState = GAME_TITLE;
     }
     
     preload() {
@@ -60,15 +61,16 @@ class Level extends Phaser.Scene {
 
         this.load.bitmapFont('mini-square-mono', 'fonts/Kenney-Mini-Square-Mono.png', 'fonts/Kenney-Mini-Square-Mono.xml');
 
-        this.load.audio('water-ambience', 'audio/seaStormAmbience.wav');
-        this.load.audio('retro-click', 'audio/retro-click.wav');
+        // this.load.audio('water-ambience', 'audio/seaStormAmbience.wav');
+        this.load.audio('enemy-die', 'audio/enemyDie.wav');
         this.load.audio('player-damage', 'audio/playerDamage.wav');
         this.load.audio('enemy-damage', 'audio/enemyDamage.wav');
         this.load.audio('player-shoot', 'audio/playerShoot.wav');
-        this.load.audio('enemy-shoot', 'audio/enemyShoot.wav');
+        this.load.audio('mermaid-shoot', 'audio/mermaidShoot.wav');
+        this.load.audio('pirate-crate-shoot', 'audio/pirateCrateShoot.wav');
         
         // update instruction text
-        document.getElementById('description').innerHTML = '<h2>Tates Shmup</h2><body>Arrow keys to move, space to shoot, R to restart</body>';
+        document.getElementById('description').innerHTML = '<h2>Literally Waves</h2><div>Move: arrow keys</div><div>Shoot: space</div><div>Restart: R</div>';
     }
     
     create() {
@@ -76,9 +78,27 @@ class Level extends Phaser.Scene {
         this.leftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
         this.rightKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.RIGHT);
         this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        this.pKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
-        this.oKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
-        this.rKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R);
+
+        // press R to reset
+        this.input.keyboard.on('keydown-R', () => {
+            this.scene.start('level');
+            this.statsInit();
+            this.gameInit();
+        });
+
+        // cheats
+        // this.input.keyboard.on('keydown-O', () => {
+        //     if (this.enemyTime === 1) this.enemyTime = 0;
+        //     else if (this.enemyTime === 0) this.enemyTime = 1;
+        // });
+        // this.input.keyboard.on('keydown-P', () => {
+        //     // for (let enemy of this.my.enemies) {
+        //     //     enemy.kill();
+        //     // }
+        //     // this.my.enemies = [];
+        //     this.currentWaveIndex++;
+        //     this.loadWave(this.currentWaveIndex);
+        // });
 
         // create ocean
         this.my.sprite.oceanBG = this.add.tileSprite(160, 144, 320, 288, "ocean-background");
@@ -89,26 +109,24 @@ class Level extends Phaser.Scene {
         this.my.ui.layer = this.my.ui.map.createLayer("Base", this.my.ui.tiles, 0, 256);
         this.my.ui.layer.depth = 6;
 
-        this.my.ui.scoreText = this.add.bitmapText(240, 272-8, 'mini-square-mono', '7654');
+        this.my.ui.scoreText = this.add.bitmapText(240, 272-8, 'mini-square-mono', '0000');
         this.my.ui.scoreText.depth = 7;
         this.my.ui.scoreText.fontSize = 24;
         this.my.ui.scoreText.letterSpacing = 0;
 
-        this.my.ui.winLoseText = this.add.bitmapText(160+3, 72-9, 'mini-square-mono', 'GAME OVER');
+        this.my.ui.winLoseText = this.add.bitmapText(160+3, 72-9, 'mini-square-mono', 'LITERALLY WAVES');
         this.my.ui.winLoseText.setOrigin(0.5, 0.5).setCenterAlign();
         this.my.ui.winLoseText.depth = 7;
         this.my.ui.winLoseText.fontSize = 48;
         this.my.ui.winLoseText.letterSpacing = 0;
-        this.my.ui.winLoseText.maxWidth = 200;
-        this.my.ui.winLoseText.visible = false;
+        this.my.ui.winLoseText.maxWidth = 320;
         
-        this.my.ui.scoreResultText = this.add.bitmapText(160+1, 144-8, 'mini-square-mono', 'SCORE: 0000');
+        this.my.ui.scoreResultText = this.add.bitmapText(160+1, 144-8, 'mini-square-mono', 'PRESS SPACE TO START');
         this.my.ui.scoreResultText.setOrigin(0.5, 0).setCenterAlign();
         this.my.ui.scoreResultText.depth = 7;
         this.my.ui.scoreResultText.fontSize = 24;
         this.my.ui.scoreResultText.letterSpacing = 0;
         this.my.ui.scoreResultText.maxWidth = 200;
-        this.my.ui.scoreResultText.visible = false;
 
         // create player sprite
         this.my.sprite.player = new Player(this, 160, 232, this.playerMovementSpeed, this.leftKey, this.rightKey, this.spaceKey);
@@ -125,17 +143,8 @@ class Level extends Phaser.Scene {
             this.my.extraDinghies.push(dinghy);
         }
 
-        // load first wave
+        // load wave data
         this.waveData = this.cache.json.get('wave-data');
-        this.loadWave(this.currentWaveIndex);
-
-        // start ocean ambience
-        this.my.seaStormAmbience = this.sound.add('water-ambience', {loop: true, volume: 0.2, mute: true});
-        this.my.seaStormAmbience.play();
-
-        this.input.keyboard.on('keydown-I', () => {
-            this.my.seaStormAmbience.setMute(!this.my.seaStormAmbience.mute);
-        });
     }
 
     loadWave(waveIndex) {
@@ -164,9 +173,8 @@ class Level extends Phaser.Scene {
 
     spawnPlayerBullet() {
         let shootDetune = (Math.random() * 200) - 100; // -100 to 100
-        let shootVolume = (Math.random() * 0.5) + 0.2; // 0.2 to 0.7
+        let shootVolume = (Math.random() * 0.5) + 1; // 1 to 1.5
         this.sound.play('player-shoot', {detune: shootDetune, volume: shootVolume});
-        
 
         let bullet = new Projectile(this, this.my.sprite.player.x, this.my.sprite.player.y, "cannonball", null, 4);
         bullet.depth = 5;
@@ -176,10 +184,6 @@ class Level extends Phaser.Scene {
     }
 
     addEnemyProjectile(projectile) {
-        let shootDetune = (Math.random() * 200) - 100; // -100 to 100
-        let shootVolume = (Math.random() * 0.5) + 0.2; // 0.2 to 0.7
-        this.sound.play('enemy-shoot', {detune: shootDetune, volume: shootVolume});
-
         projectile.depth = 3;
         this.my.enemyProjectiles.push(projectile);
     }
@@ -210,6 +214,7 @@ class Level extends Phaser.Scene {
 
     gameWin() {
         if (this.gameState === GAME_WIN) return;
+        else this.gameState = GAME_WIN;
 
         // destroy enemy projectiles
         for (let p of this.my.enemyProjectiles) {
@@ -219,7 +224,7 @@ class Level extends Phaser.Scene {
 
         this.my.ui.scoreText.visible = false;
 
-        this.my.ui.winLoseText.setText('YOU WIN');
+        this.my.ui.winLoseText.setText('YOU\nWIN');
         this.my.ui.winLoseText.visible = true;
 
         let extraLives = this.my.extraDinghies.length;
@@ -232,14 +237,13 @@ class Level extends Phaser.Scene {
         this.my.ui.scoreResultText.visible = true;
 
         this.oceanScrollSpeed = this.defaultOceanScrollSpeed;
-
-        this.gameState = GAME_WIN;
     }
 
     gameOver() {
         if (this.gameState === GAME_OVER) return;
+        else this.gameState = GAME_OVER;
 
-        this.my.ui.winLoseText.setText('GAME OVER');
+        this.my.ui.winLoseText.setText('GAME\nOVER');
         this.my.ui.winLoseText.visible = true;
 
         this.my.ui.scoreResultText.setText('PRESS R TO RESTART');
@@ -248,7 +252,6 @@ class Level extends Phaser.Scene {
         this.playerTime = 0;
         this.enemyTime = 0;
 
-        this.gameState = GAME_OVER;
     }
     
     update(time, delta) {
@@ -261,26 +264,11 @@ class Level extends Phaser.Scene {
         //     this.my.enemyProjectiles.push(fish);
         // }
 
-        if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
-            // if (this.playerTime === 1) this.playerTime = 0;
-            // else if (this.playerTime === 0) this.playerTime = 1;
-            for (let enemy of this.my.enemies) {
-                enemy.kill();
-            }
-            this.my.enemies = [];
-        }
-
-        if (Phaser.Input.Keyboard.JustDown(this.oKey)) {
-            if (this.enemyTime === 1) this.enemyTime = 0;
-            else if (this.enemyTime === 0) this.enemyTime = 1;
-        }
-
-        // resets the game
-        if (Phaser.Input.Keyboard.JustDown(this.rKey)) {
-            this.scene.start('level');
-            this.statsInit();
-            this.gameInit();
-            return;
+        if (this.gameState === GAME_TITLE && Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+            this.my.ui.winLoseText.visible = false;
+            this.my.ui.scoreResultText.visible = false;
+            this.gameState = GAME_ACTIVE;
+            this.loadWave(this.currentWaveIndex);
         }
 
         // scroll the ocean background
@@ -333,7 +321,7 @@ class Level extends Phaser.Scene {
                 let p = this.my.playerProjectiles[j];
                 if (Math.abs(enemy.x - p.x) < enemy.rx + p.rx && Math.abs(enemy.y - p.y) < enemy.ry + p.ry) {
                     enemyDamage++;
-                    this.sound.play('enemy-damage');
+                    this.sound.play('enemy-damage', {volume: 2});
                     p.destroy();
                     this.my.playerProjectiles.splice(j, 1);
                     j--; // for loop removal
@@ -342,7 +330,7 @@ class Level extends Phaser.Scene {
             if (!enemyDamage) continue; // skip the following code if the enemy doesn't take damage
             enemy.takeDamage(enemyDamage);
             if (enemy.isDead) {
-                this.sound.play('retro-click');
+                this.sound.play('enemy-die', {volume: 1, rate: 2});
                 this.my.enemies.splice(i, 1);
                 i--; // for loop removal
             }
@@ -379,7 +367,7 @@ class Level extends Phaser.Scene {
         if (this.gameState === GAME_ACTIVE) this.updateScore();
 
         // move to next wave if all enemies are dead
-        if (this.my.enemies.length === 0) {
+        if (this.my.enemies.length === 0 && this.gameState === GAME_ACTIVE) {
             if (this.currentWaveIndex === this.waveData.length - 1) {
                 this.gameWin();
             }

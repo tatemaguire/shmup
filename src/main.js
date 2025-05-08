@@ -12,6 +12,7 @@
 // debug with extreme prejudice
 "use strict"
 
+
 // game config
 let config = {
     parent: 'phaser-game',
@@ -21,9 +22,10 @@ let config = {
     },
     width: 320,
     height: 288,
-    // scaleMode: Phaser.Scale.FIT,
-    // maxHeight: 100,
-    zoom: 3, //TODO: remove this and make it so scaleMode and maxHeight work
+    scale: {
+        autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
+        zoom: (window.innerHeight * 0.75) / 288
+    },
     scene: [Level]
 }
 

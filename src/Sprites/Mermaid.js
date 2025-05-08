@@ -62,6 +62,10 @@ class Mermaid extends Enemy {
             let playerPosition = this.scene.getPlayerPosition();
             let angleToPlayer = Math.atan2(playerPosition.y - (this.y+this.ry), playerPosition.x - this.x);
 
+            let shootDetune = (Math.random() * 200) - 100; // -100 to 100
+            let shootVolume = (Math.random() * 0.5) + 1.5; // 1.5 to 2
+            this.scene.sound.play('mermaid-shoot', {detune: shootDetune, volume: shootVolume});
+
             // launch fish!
             let fish = new Projectile(this.scene, this.x, this.y+this.ry, Mermaid.fishTexture, Mermaid.fishFrame, 4);
             fish.setVelocity(this.fishMovementSpeed, angleToPlayer);

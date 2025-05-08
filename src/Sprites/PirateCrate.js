@@ -31,6 +31,10 @@ class PirateCrate extends Enemy {
         if (this.canShoot && !this.isPaused && this.cooldownTimer > this.cooldownLength) {
             this.cooldownTimer = 0;
 
+            let shootDetune = (Math.random() * 200) - 100; // -100 to 100
+            let shootVolume = (Math.random() * 0.5) + 2; // 0.2 to 0.7
+            this.scene.sound.play('pirate-crate-shoot', {detune: shootDetune, volume: shootVolume});
+
             let bullet = new Dart(this.scene, this.x, this.y+this.ry, PirateCrate.bulletTexture, PirateCrate.bulletFrame, 4);
             bullet.depth = 3;
             bullet.setVelocity(this.bulletMovementSpeed, Math.PI/2);
